@@ -1,237 +1,469 @@
-# Komfyrvakt
+# Komfyrvakt 🔥
 
-**Simple, self-hostable logging service with AI analytics.**
+**Self-hostable logging service with AI-powered analytics and time series visualization.**
 
-> *Komfyrvakt (Norwegian: "stove guard") - Like the device that prevents your stove from burning down your house, Komfyrvakt watches your systems 24/7.*
+> *Komfyrvakt (Norwegian: "stove guard") - The device that prevents kitchen fires. Similarly, Komfyrvakt watches your systems 24/7, preventing infrastructure fires before they happen.*
+
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
+[![SvelteKit](https://img.shields.io/badge/SvelteKit-2.0-orange.svg)](https://kit.svelte.dev/)
+[![Redis](https://img.shields.io/badge/Redis-7.0-red.svg)](https://redis.io/)
+
+---
 
 ## What It Does
 
-Send logs from your apps, IoT devices, or services. Query them fast. Get AI-powered insights.
+Send logs from apps, IoT devices, or services. Query them fast. Get AI insights. Visualize trends.
 
 **No complex setup. No multi-tenant overhead. Just logging that works.**
 
-### Example Use Case
+```bash
+# Post a log
+curl -X POST http://localhost:8080/api/logs \
+  -H "Authorization: Bearer kmf_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Temperature reading",
+    "level": "warning",
+    "group": "datacenter:server-rack-1",
+    "tags": ["temperature", "monitoring"],
+    "data": {"temperature": 8.5, "threshold": 6.0}
+  }'
 
-You have temperature sensors in multiple fridges posting readings every 10 seconds:
+# Query logs
+curl http://localhost:8080/api/logs?group=datacenter:* \
+  -H "Authorization: Bearer kmf_your_key"
 
-```json
-POST /api/logs
-{
-  "message": "Temperature reading",
-  "level": "info",
-  "group": "restaurant-a:fridge-1",
-  "tags": ["temperature", "monitoring"],
-  "data": {"temperature": 4.2, "humidity": 65},
-  "timestamp": "2025-11-12T20:15:30Z"
-}
+# View dashboard
+open http://localhost:8080
 ```
 
-Query them:
-```
-GET /api/logs?group=restaurant-a:*&level=warning
-```
+---
 
-View in dashboard:
-```
-http://localhost:8080
-```
+## Key Features
 
-Komfyrvakt handles storage, querying, visualization, and AI analysis.
+- ⚡ **Fast Queries** - Redis-backed with indexed groups and tags
+- 🤖 **AI Analysis** - Gemini-powered insights with structured findings and recommendations
+- 📈 **Time Series** - Automatic trend detection and visualization
+- 🗂️ **Smart Organization** - Hierarchical groups with prefix matching
+- 📊 **Live Dashboard** - Full-screen panel layout, iframe-embeddable
+- 💾 **Smart Caching** - AI reports cached 2hr, time series 30min
+- 🐳 **Self-Hostable** - Docker Compose or bare metal
+- ☁️ **Cloud Ready** - Deploy to GCP Cloud Run, AWS, Azure
+- 🔐 **API Key Auth** - Auto-generated on first run
+- 💰 **Cost Effective** - Optimized for free tier usage
 
-## Features
-
-- ⚡ **Fast** - Redis-backed hot storage for recent logs
-- 🗂️ **Group Organization** - Hierarchical grouping with prefix queries
-- 🏷️ **Tag Filtering** - Flexible tag-based filtering
-- 📊 **Dashboard** - SvelteKit real-time log viewer with auto-refresh
-- 🤖 **AI Analytics** - Automated pattern detection (coming soon)
-- 🐳 **Self-hostable** - Docker Compose for easy deployment
-- ☁️ **Cloud-ready** - Runs on GCP Cloud Run (or any cloud)
-- 💰 **Cost-effective** - Optimized for free tier
-- 🔐 **Secure** - API key authentication
+---
 
 ## Architecture
 
 ```
-Your Apps/Sensors
-    ↓ POST /api/logs
-Komfyrvakt (Single Server - Port 8080)
-    ├── API Routes (/api/*)
-    │   └── Redis (log storage with TTL)
-    └── Dashboard (/) - SvelteKit UI
+┌─────────────────────────────────────────────────┐
+│              Your Applications                  │
+│   (APIs, IoT devices, microservices, etc.)     │
+└────────────────┬────────────────────────────────┘
+                 │ POST /api/logs
+                 ↓
+┌─────────────────────────────────────────────────┐
+│        Komfyrvakt (Single Server:8080)          │
+│  ┌──────────────┬───────────────────────────┐   │
+│  │ API Routes   │  Dashboard (SvelteKit)    │   │
+│  │ (/api/*)     │  (/)                      │   │
+│  │              │                           │   │
+│  │ • Ingest     │  • Real-time viewer       │   │
+│  │ • Query      │  • AI insights panel      │   │
+│  │ • Analyze    │  • Time series charts     │   │
+│  │ • Purge      │  • Group navigation       │   │
+│  └──────┬───────┴───────────────────────────┘   │
+│         ↓                                        │
+│  ┌─────────────────┐                            │
+│  │  Redis (Hot)    │                            │
+│  │  48hr retention │                            │
+│  └─────────────────┘                            │
+└─────────────────────────────────────────────────┘
 ```
 
-**Organization:**
-- **Groups** - Hierarchical (e.g., `restaurant-a:fridge-1`, `service:api:prod`)
-- **Tags** - Flexible filtering (e.g., `["temperature", "alert", "critical"]`)
-- Query by group prefix: `?group=restaurant-a:*`
+**Data Organization:**
+- **Groups**: Hierarchical namespacing (`datacenter:server-rack-1`, `app:api:prod`)
+- **Tags**: Flexible filtering (`temperature`, `alert`, `performance`)
+- **Time Series**: Auto-generated 5-minute interval aggregations
+
+---
 
 ## Tech Stack
 
-- **Backend**: Python + FastAPI
-- **Frontend**: SvelteKit + TypeScript + TailwindCSS
-- **Cache**: Redis (48-hour retention with TTL)
-- **Storage**: Optional cold storage (Firestore/BigQuery)
-- **AI**: Gemini / OpenAI (coming soon)
-- **Deployment**: Single server (Docker Compose or Cloud Run)
-- **Shared**: `reusables.python` library
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.11+, FastAPI, Pydantic |
+| Frontend | SvelteKit, TypeScript, TailwindCSS, Chart.js |
+| Storage | Redis 7.0 (hot), Optional GCS/Firestore (cold) |
+| AI | Google Gemini 2.0 Flash Lite |
+| Deployment | Docker, Cloud Run, Compute Engine |
+| Shared Libs | `reusables.python` (redis, gemini) |
+
+---
 
 ## Quick Start
 
-**First time setup?** See [SETUP.md](SETUP.md) for detailed instructions.
+### One-Command Startup
 
-### Self-Hosted (Docker Compose)
-
-```bash
-git clone https://github.com/noahssjursen-code/noah-sjursen-cloud.git
-cd noah-sjursen-cloud/dataplatform/projects/Komfyrvakt
-docker-compose up
-```
-
-**Services start automatically:**
-- **Everything on one server:** `http://localhost:8080`
-- Dashboard: `http://localhost:8080/`
-- API: `http://localhost:8080/api/*`
-- API Docs: `http://localhost:8080/api/docs`
-- Redis: Internal
-
-**On first run, an API key is auto-generated. Check terminal for the key.**
-
-### Local Development (Without Docker)
-
-**Quick Start (Automatic):**
 ```powershell
 .\start.ps1
 ```
 
-This will:
-1. Install API dependencies
-2. Build dashboard
-3. Start the server
+**Automatically:**
+1. Installs Python dependencies
+2. Builds SvelteKit dashboard
+3. Starts server on `http://localhost:8080`
+4. Prompts for Gemini API key (optional, for AI features)
 
-**Visit** `http://localhost:8080` - Dashboard loads, enter API key from terminal!
+**First run:** API key auto-generated and displayed in terminal.
 
-**Note:** AI features require `GEMINI_API_KEY` in `.env` file. Get free key at https://aistudio.google.com/apikey
-
-**Manual (Step-by-step):**
-```powershell
-# 1. Build dashboard
-.\build-dashboard.ps1
-
-# 2. Install API deps
-cd api
-pip install -r requirements.txt
-
-# 3. Run server
-python main.py
-```
-
-### Cloud Deployment (GCP)
-
-Coming soon - will deploy both API and dashboard to Cloud Run.
-
-## API
-
-**Authentication:** All endpoints require API key in header:
-```
-Authorization: Bearer kmf_your_api_key_here
-```
-
-### Send Logs
+### With Docker Compose
 
 ```bash
-POST /api/logs
-Headers:
-  Authorization: Bearer kmf_your_api_key_here
-  Content-Type: application/json
+# Clone repo
+git clone https://github.com/noahssjursen-code/noah-sjursen-cloud.git
+cd noah-sjursen-cloud/dataplatform/projects/Komfyrvakt
 
-Body:
-{
-  "message": "Request completed",
-  "level": "info",
-  "group": "service:api:prod",
-  "tags": ["performance"],
-  "data": {"duration_ms": 45, "status": 200}
-}
+# Add your Gemini key (optional)
+echo "GEMINI_API_KEY=your_key_here" >> .env
+
+# Start everything
+docker-compose up
 ```
 
-### Query Logs
-
-```bash
-GET /api/logs?group=service:api:*&level=error&limit=100
-Headers:
-  Authorization: Bearer kmf_your_api_key_here
-```
-
-**Filters:** `group`, `tags`, `level`, `since`, `until`, `source`, `limit`
-
-### Dashboard
-
-Visit `http://localhost:8080` for web UI:
-- ✅ Real-time log viewer (auto-refresh every 5s)
-- ✅ Filter by group, tags, level
-- ✅ Color-coded log levels
-- ✅ Expandable data fields
-- ✅ Responsive design
-
-**See [DOCS.md](DOCS.md) for complete API reference.**
-
-## Log Structure
-
-```json
-{
-  "id": "log_20251112201530_abc123",
-  "message": "Temperature too high",
-  "level": "warning",
-  "group": "restaurant-a:fridge-1",
-  "tags": ["temperature", "alert"],
-  "data": {
-    "temperature": 8.5,
-    "threshold": 6.0
-  },
-  "timestamp": "2025-11-12T20:15:30Z",
-  "source": "sensor-temp-001"
-}
-```
-
-**Levels:** `debug`, `info`, `warning`, `error`, `critical`
-
-## Project Structure
-
-```
-Komfyrvakt/
-├── api/                  # Backend (Python/FastAPI)
-│   ├── main.py           # API server
-│   ├── models/           # Data models
-│   ├── services/         # Business logic
-│   ├── config/           # Configuration
-│   ├── utils/            # Helpers
-│   ├── requirements.txt
-│   └── Dockerfile
-├── dashboard/            # Frontend (SvelteKit + TypeScript + Tailwind)
-│   ├── src/             # Svelte components and routes
-│   └── build/           # Built static files (served by API)
-├── docker-compose.yml    # Self-hosting (runs both)
-├── README.md             # This file
-├── DOCS.md               # API documentation
-└── CURRENT.md            # Development status
-```
-
-## Why Komfyrvakt?
-
-**vs ELK Stack:** Simpler, lighter, AI-powered  
-**vs CloudWatch:** Self-hostable, cheaper, customizable  
-**vs Datadog:** Free, open source, own your data  
-
-Built for developers who want logging without the enterprise overhead.
-
-## Status
-
-✅ **Core Functionality Working** - Log ingestion, querying, dashboard live!
-
-🚧 **In Progress** - AI analytics, cold storage, Docker deployment
+**Services:**
+- Dashboard + API: `http://localhost:8080`
+- Redis: Internal (port 6379)
 
 ---
 
-**Komfyrvakt** - *Simple logging. Fast queries. AI insights.* 🔥
+## Configuration
 
+Create `.env` file in Komfyrvakt root:
+
+```bash
+# Auto-generated on first run
+KOMFYRVAKT_API_KEY=kmf_generated_key
+
+# Redis connection
+REDIS_HOST=localhost  # or your Redis server IP
+REDIS_PORT=6379
+
+# AI features (optional)
+# Get free key: https://aistudio.google.com/apikey
+GEMINI_API_KEY=your_gemini_api_key
+
+# Storage
+LOG_RETENTION_HOURS=48
+ENVIRONMENT=local
+```
+
+See [SETUP.md](SETUP.md) for detailed configuration options.
+
+---
+
+## API Reference
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/logs` | Ingest single log |
+| POST | `/api/logs/batch` | Ingest multiple logs |
+| GET | `/api/logs` | Query logs with filters |
+| GET | `/api/logs/{id}` | Get specific log |
+| GET | `/api/groups` | List all groups |
+| POST | `/api/analyze` | AI analysis with time series |
+| DELETE | `/api/purge` | Purge logs by group |
+| GET | `/api/stats` | Platform statistics |
+| GET | `/api/health` | Health check |
+
+**Authentication:** All endpoints require `Authorization: Bearer kmf_your_key`
+
+**Full API docs:** `http://localhost:8080/api/docs` (interactive Swagger UI)
+
+**Detailed documentation:** [DOCS.md](DOCS.md)
+
+---
+
+## AI Analysis Features
+
+### Structured Insights
+
+AI returns JSON with:
+- **Summary**: System health overview
+- **Severity**: `normal` | `warning` | `critical`
+- **Findings**: Issues with temporal context
+- **Recommendations**: Prioritized actions (high/medium/low)
+
+### Time Series Analysis
+
+- Auto-generates 5-minute interval aggregations
+- Tracks all numeric fields (temperature, CPU, latency, etc.)
+- Detects trends (rising, falling, spikes)
+- Cached separately for performance
+
+### Example Response
+
+```json
+{
+  "summary": "System showing elevated CPU with temperature spike at 10:30 PM",
+  "severity": "warning",
+  "findings": [
+    {
+      "title": "CPU Usage Spike",
+      "description": "CPU jumped from 45% to 78% over 15 minutes",
+      "severity": "warning"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "Investigate process causing CPU spike",
+      "priority": "high"
+    }
+  ]
+}
+```
+
+---
+
+## Dashboard
+
+**Full-screen panel layout** optimized for monitoring and iframe embedding:
+
+- **Left Sidebar**: Group navigation
+- **Center (70%)**: AI insights, metrics, time series charts
+- **Right Sidebar (30%)**: Recent logs (compact view)
+
+**Features:**
+- ✅ Auto-loading API key
+- ✅ Expandable time series charts (Chart.js)
+- ✅ Real-time log streaming
+- ✅ Search and filter
+- ✅ Color-coded severity levels
+- ✅ Collapsible data fields
+- ✅ Responsive design
+
+---
+
+## Use Cases
+
+**IoT Monitoring:**
+```json
+{
+  "group": "warehouse:freezer-3",
+  "data": {"temperature": -18.5, "humidity": 45}
+}
+```
+
+**API Logging:**
+```json
+{
+  "group": "service:api:prod",
+  "data": {"duration_ms": 234, "status": 200}
+}
+```
+
+**Infrastructure:**
+```json
+{
+  "group": "datacenter:server-rack-1",
+  "data": {"cpu": 67, "memory": 82, "disk_io": 450}
+}
+```
+
+**Application Events:**
+```json
+{
+  "group": "app:obsero:prod",
+  "tags": ["user-action", "critical"],
+  "data": {"user_id": "123", "action": "delete_asset"}
+}
+```
+
+---
+
+## Client Examples
+
+### Python
+
+```python
+import requests
+
+API_KEY = "kmf_your_api_key"
+BASE_URL = "http://localhost:8080/api"
+
+# Post log
+requests.post(
+    f"{BASE_URL}/logs",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    json={
+        "message": "User logged in",
+        "level": "info",
+        "group": "app:auth",
+        "tags": ["authentication"],
+        "data": {"user_id": "noah@example.com"}
+    }
+)
+
+# Query logs
+logs = requests.get(
+    f"{BASE_URL}/logs?group=app:*&limit=50",
+    headers={"Authorization": f"Bearer {API_KEY}"}
+).json()
+```
+
+### JavaScript/TypeScript
+
+```typescript
+const API_KEY = 'kmf_your_api_key';
+const BASE_URL = 'http://localhost:8080/api';
+
+// Post log
+await fetch(`${BASE_URL}/logs`, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    message: 'Payment processed',
+    level: 'info',
+    group: 'payments:stripe',
+    tags: ['transaction', 'success'],
+    data: { amount: 99.99, currency: 'USD' }
+  })
+});
+```
+
+### PowerShell
+
+```powershell
+$apiKey = "kmf_your_api_key"
+$headers = @{"Authorization" = "Bearer $apiKey"}
+
+# Post log
+Invoke-RestMethod -Uri "http://localhost:8080/api/logs" `
+  -Method POST -Headers $headers -Body (@{
+    message = "Backup completed"
+    level = "info"
+    group = "backup:database"
+    data = @{ duration_min = 45; size_gb = 120 }
+  } | ConvertTo-Json)
+```
+
+---
+
+## Deployment
+
+### Self-Hosting (Recommended)
+
+**Docker Compose:**
+```bash
+docker-compose up -d
+```
+
+**Bare Metal:**
+```powershell
+.\start.ps1
+```
+
+### GCP Cloud Run
+
+Coming soon - automated deployment script.
+
+---
+
+## Project Status
+
+**✅ Production Features:**
+- Log ingestion (single + batch)
+- Fast querying with filters
+- Group-based organization
+- API key authentication
+- Redis hot storage
+- SvelteKit dashboard
+- AI analysis with Gemini
+- Time series aggregation
+- Smart caching (2hr AI, 30min time series)
+- Full-screen panel layout
+- Chart.js visualization
+
+**🚧 Planned:**
+- CI/CD pipeline (GitHub Actions)
+- Unit tests (pytest, vitest)
+- GCP deployment automation
+- Cold storage integration
+- SDK clients (Python, JS, Go)
+- WebSocket live streaming
+- Export to CSV/JSON
+- Dark mode
+
+**📊 Current Stats:**
+- Built in: ~4 hours
+- Lines of code: ~2,500+
+- API endpoints: 10
+- Cache strategies: 2 (analysis, time series)
+- Deployment options: 3 (local, Docker, Cloud Run)
+
+---
+
+## Documentation
+
+- [SETUP.md](SETUP.md) - Detailed setup instructions
+- [DOCS.md](DOCS.md) - Complete API reference
+- [CURRENT.md](CURRENT.md) - Development progress tracker
+
+---
+
+## Why Komfyrvakt?
+
+**vs ELK Stack:** Simpler setup, AI-powered, lighter footprint  
+**vs CloudWatch:** Self-hostable, customizable, no vendor lock-in  
+**vs Datadog:** Free, open source, own your data  
+**vs Splunk:** No complexity, modern UI, AI built-in
+
+**Built for developers who want:**
+- Logging without enterprise overhead
+- Self-hosting control
+- AI insights without manual analysis
+- Fast queries without complex queries
+- Beautiful dashboards without config hell
+
+---
+
+## Contributing
+
+This is a personal learning project, but contributions welcome!
+
+1. Fork the repo
+2. Create a feature branch
+3. Make your changes
+4. Open a PR
+
+**Coding style:** Practical > perfect. Ship it, then refine.
+
+---
+
+## License
+
+MIT License - use it, fork it, self-host it, do whatever you want with it.
+
+---
+
+## Acknowledgments
+
+Built as part of [noah-sjursen-cloud](https://github.com/noahssjursen-code/noah-sjursen-cloud) - my personal cloud platform for learning GCP, DevOps, and full-stack development.
+
+**Inspired by:**
+- My professional work with Azure + Redis
+- Need for simple, self-hostable logging
+- Previous project: WatchTower (multi-tenant version, deprecated)
+
+---
+
+**Komfyrvakt** - *Simple logging. Fast queries. AI insights. Zero fires.* 🔥
+
+**Built by [Noah Sjursen](https://github.com/noahssjursen-code)** | 21 | Software Developer | Norway 🇳🇴
