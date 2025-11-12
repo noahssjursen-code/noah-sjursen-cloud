@@ -1,115 +1,33 @@
 # Noah Sjursen Cloud
 
-> Personal cloud platform built to explore distributed systems, cloud architecture, and modern backend development patterns.
+Personal cloud platform for learning and experimentation.
 
-[![Live API](https://img.shields.io/badge/Live%20API-Cloud%20Run-4285F4?logo=google-cloud)](https://firstapi-766963653213.us-central1.run.app)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
-[![GCP](https://img.shields.io/badge/Cloud-GCP-4285F4?logo=google-cloud)](https://cloud.google.com/)
+## Projects
 
----
+**FirstApi** - [Live](https://firstapi-766963653213.us-central1.run.app) | [Docs](https://firstapi-766963653213.us-central1.run.app/docs)
 
-## 🚀 Live Projects
+Simple FastAPI service deployed to GCP Cloud Run. Demonstrates shared library pattern across services.
 
-### **[FirstApi](https://firstapi-766963653213.us-central1.run.app)** - Production API on Cloud Run
-A FastAPI service demonstrating:
-- ✅ **Source-based deployment** to GCP Cloud Run (no Docker required)
-- ✅ **Shared library pattern** (reusable utilities across multiple services)
-- ✅ **Auto-scaling serverless architecture**
-- ✅ **Sub-100ms response times**
+## Tech
 
-**Try it:**
-- [Root Endpoint](https://firstapi-766963653213.us-central1.run.app/) - Greeting from shared library
-- [Info Endpoint](https://firstapi-766963653213.us-central1.run.app/info) - API & library metadata
-- [API Docs](https://firstapi-766963653213.us-central1.run.app/docs) - Auto-generated documentation
+- Python + FastAPI
+- Google Cloud Run
+- Terraform (for infrastructure)
 
----
-
-## 🏗️ Architecture
+## Structure
 
 ```
-noah-sjursen-cloud/
-├── dataplatform/
-│   ├── iac/terraform/          # Infrastructure as Code (ready for Redis/networking)
-│   └── projects/
-│       ├── reusables/          # Shared Python utilities (imported by all services)
-│       └── FirstApi/           # ✅ DEPLOYED - FastAPI service on Cloud Run
+dataplatform/
+├── iac/terraform/     # Infrastructure as Code
+└── projects/
+    ├── reusables/     # Shared utilities
+    └── FirstApi/      # Deployed API
 ```
 
-**Pattern:** Similar to enterprise C# class libraries, `reusables/` provides shared clients and utilities that multiple services can import—maintaining DRY principles across the platform.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Cloud Platform** | Google Cloud Platform (GCP) |
-| **Compute** | Cloud Run (serverless containers) |
-| **Build** | Cloud Build (automatic containerization) |
-| **Language** | Python 3.11+ |
-| **Framework** | FastAPI |
-| **IaC (Ready)** | Terraform |
-
----
-
-## 🎯 Current Status
-
-- [x] **FirstApi** - Cloud Run deployment with shared library pattern
-
-*More projects coming as I explore distributed systems and Redis.*
-
----
-
-## 💡 Design Principles
-
-- **Production-Ready**: Real-world patterns, not tutorials
-- **Cost-Effective**: Free tier optimized (~$0-5/month)
-- **Scalable**: Serverless architecture that grows with demand
-- **Maintainable**: Shared code patterns, comprehensive documentation
-
----
-
-## 📚 Getting Started
-
-### Deploy FirstApi Locally:
+## Run Locally
 
 ```bash
 cd dataplatform/projects/FirstApi
 pip install -r requirements.txt
 python main.py
 ```
-
-Visit `http://localhost:8080`
-
-### Deploy to GCP:
-
-```powershell
-cd dataplatform/projects/FirstApi
-.\deploy.ps1
-```
-
-See [FirstApi Documentation](dataplatform/projects/FirstApi/README.md) for details.
-
----
-
-## 📊 Performance
-
-| Metric | Value |
-|--------|-------|
-| **Cold Start** | ~2-3 seconds |
-| **Warm Response** | <100ms |
-| **Scaling** | 0 → 10 instances (auto) |
-| **Cost** | Free tier (Cloud Run) |
-
----
-
-## 🔗 Links
-
-- **Live API:** https://firstapi-766963653213.us-central1.run.app
-- **API Docs:** https://firstapi-766963653213.us-central1.run.app/docs
-- **Repository:** https://github.com/noahssjursen-code/noah-sjursen-cloud
-
----
-
-**Built by Noah Sjursen** | *Exploring distributed systems, one service at a time.* 🚀
