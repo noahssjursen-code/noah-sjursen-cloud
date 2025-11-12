@@ -8,7 +8,6 @@
   let apiKey = import.meta.env.VITE_API_KEY || '';
   let isAuthenticated = !!apiKey;
   let selectedGroup = '';
-  let showAnalysis = false;
   
   onMount(() => {
     // If not in build, try localStorage as fallback
@@ -21,25 +20,23 @@
     }
   });
   
+  let logViewerRef: any;
+  let analysisPanelRef: any;
+  
   function handleGroupSelect(group: string) {
     selectedGroup = group;
-    showAnalysis = false;  // Reset analysis when switching groups
+    // Manually trigger refresh on components
+    if (logViewerRef) logViewerRef.refresh();
+    if (analysisPanelRef) analysisPanelRef.refresh();
   }
 </script>
 
-<div class="container mx-auto px-4 py-8">
-  <!-- Header -->
-  <div class="mb-8">
-    <h1 class="text-4xl font-bold text-gray-900 mb-2">
-      🔥 Komfyrvakt
-    </h1>
-    <p class="text-gray-600">Simple logging service with AI analytics</p>
-  </div>
+<div class="h-screen w-full overflow-hidden bg-gray-50 flex flex-col">
 
   {#if !isAuthenticated}
     <!-- No API Key Found -->
-    <div class="max-w-md mx-auto mt-16">
-      <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+    <div class="flex items-center justify-center h-full">
+      <div class="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
         <h2 class="text-2xl font-semibold text-red-900 mb-4">⚠️ Configuration Error</h2>
         <p class="text-red-800 mb-4">
           API key not found. The dashboard was not built correctly.
@@ -50,45 +47,39 @@
       </div>
     </div>
   {:else}
-    <!-- Dashboard -->
-    <div class="flex justify-end items-center mb-6">
-      <div class="flex gap-4 items-center">
+    <!-- Header Bar -->
+    <div class="flex-none bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <h1 class="text-xl font-bold text-gray-900">🔥 Komfyrvakt</h1>
+        {#if selectedGroup}
+          <span class="text-sm text-gray-500">•</span>
+          <span class="text-sm font-mono text-orange-600">{selectedGroup}</span>
+        {/if}
+      </div>
+      <div class="flex items-center gap-2">
         <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-        <span class="text-sm text-gray-600">Connected</span>
+        <span class="text-xs text-gray-600">Live</span>
       </div>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      <!-- Groups Sidebar -->
-      <div class="lg:col-span-1">
+    <!-- Main Content Area -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Sidebar -->
+      <div class="flex-none w-64 bg-white border-r border-gray-200 overflow-y-auto">
         <GroupList {apiKey} {selectedGroup} onGroupSelect={handleGroupSelect} />
       </div>
       
-      <!-- Main Content -->
-      <div class="lg:col-span-4">
-        <div class="mb-4 flex justify-between items-center">
-          <div>
-            {#if selectedGroup}
-              <h2 class="text-xl font-semibold">Group: <span class="font-mono text-orange-600">{selectedGroup}</span></h2>
-            {:else}
-              <h2 class="text-xl font-semibold">All Logs</h2>
-            {/if}
-          </div>
-          <button
-            on:click={() => showAnalysis = !showAnalysis}
-            class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition text-sm font-medium"
-          >
-            {showAnalysis ? 'Hide' : 'Show'} AI Analysis
-          </button>
+      <!-- Main Content (HORIZONTAL) -->
+      <div class="flex-1 flex overflow-hidden">
+        <!-- AI Analysis & Metrics (LEFT - 70%) -->
+        <div class="flex-1 overflow-y-auto bg-white">
+          <AnalysisPanel bind:this={analysisPanelRef} {apiKey} group={selectedGroup || undefined} />
         </div>
         
-        {#if showAnalysis}
-          <div class="mb-6">
-            <AnalysisPanel {apiKey} group={selectedGroup || undefined} />
-          </div>
-        {/if}
-        
-        <LogViewer {apiKey} group={selectedGroup || undefined} />
+        <!-- Logs Panel (RIGHT - 30%) -->
+        <div class="flex-none w-96 border-l-2 border-gray-300 overflow-hidden bg-gray-50">
+          <LogViewer bind:this={logViewerRef} {apiKey} group={selectedGroup || undefined} minimal={true} />
+        </div>
       </div>
     </div>
   {/if}

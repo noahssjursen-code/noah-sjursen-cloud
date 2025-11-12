@@ -75,6 +75,33 @@ def post_log(log: LogEntry):
         raise HTTPException(status_code=500, detail=f"Failed to store log: {str(e)}")
 
 
+@app.post("/api/logs/batch", dependencies=[Depends(verify_api_key)])
+def post_logs_batch(logs: List[LogEntry]):
+    """
+    Ingest multiple log entries in a single request.
+    
+    Requires API key in Authorization header:
+        Authorization: Bearer kmf_your_api_key
+    """
+    try:
+        stored_logs = []
+        for idx, log in enumerate(logs):
+            if idx == 0:  # Debug first log
+                print(f"First log timestamp: {log.timestamp}, type: {type(log.timestamp)}")
+            stored_log = LogService.store_log(log, retention_hours=settings.LOG_RETENTION_HOURS)
+            stored_logs.append(stored_log)
+        
+        print(f"Batch ingested {len(stored_logs)} logs with timestamps ranging: {stored_logs[0].timestamp} to {stored_logs[-1].timestamp}")
+        
+        return {
+            "status": "success",
+            "ingested": len(stored_logs),
+            "logs": stored_logs
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to store logs: {str(e)}")
+
+
 @app.get("/api/logs", response_model=List[StoredLog], dependencies=[Depends(verify_api_key)])
 def get_logs(
     group: Optional[str] = Query(default=None, description="Filter by group (use * for prefix match)"),
@@ -217,6 +244,8 @@ def analyze_logs(
         POST /api/analyze?refresh=true           # Force new analysis
     """
     try:
+        print(f"📊 /api/analyze - group={group}, refresh={refresh}, use_cache={not refresh}")
+        
         # Build query for logs
         query = LogQuery(
             group=group,

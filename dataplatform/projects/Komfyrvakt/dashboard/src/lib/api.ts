@@ -112,6 +112,38 @@ export async function fetchGroups(apiKey: string): Promise<string[]> {
   return response.groups;
 }
 
+export interface AIInsights {
+  summary: string;
+  severity: 'normal' | 'warning' | 'critical';
+  findings: Array<{
+    title: string;
+    description: string;
+    severity: 'info' | 'warning' | 'critical';
+  }>;
+  recommendations: Array<{
+    action: string;
+    priority: 'low' | 'medium' | 'high';
+  }>;
+}
+
+export interface TimeSeriesInterval {
+  timestamp: string;
+  log_count: number;
+  levels: Record<string, number>;
+  data: Record<string, {
+    min: number;
+    max: number;
+    avg: number;
+    count: number;
+  }>;
+}
+
+export interface TimeSeries {
+  intervals: TimeSeriesInterval[];
+  total_intervals: number;
+  fields_tracked: string[];
+}
+
 export interface AnalysisResult {
   timestamp: string;
   group?: string;
@@ -121,7 +153,8 @@ export interface AnalysisResult {
     tag_counts: Record<string, number>;
     data_fields: Record<string, any>;
   };
-  ai_insights: string;
+  time_series?: TimeSeries;
+  ai_insights: AIInsights | string;
   analyzed_logs: number;
 }
 

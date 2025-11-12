@@ -416,7 +416,9 @@ def cache_set(key: str, value: Any, ttl: int = 3600) -> bool:
     Example:
         cache_set('cache:user:123', user_data, ttl=1800)
     """
-    return set_value(key, value, ttl=ttl)
+    result = set_value(key, value, ttl=ttl)
+    print(f"💾 cache_set({key[:50]}...) = {result}, TTL={ttl}s")
+    return result
 
 
 # ============================================================================
