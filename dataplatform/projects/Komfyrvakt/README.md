@@ -15,11 +15,12 @@ Send logs from your apps, IoT devices, or services. Query them fast. Get AI-powe
 You have temperature sensors in multiple fridges posting readings every 10 seconds:
 
 ```json
-POST /logs
+POST /api/logs
 {
   "message": "Temperature reading",
   "level": "info",
-  "tags": ["fridge-1", "building-a"],
+  "group": "restaurant-a:fridge-1",
+  "tags": ["temperature", "monitoring"],
   "data": {"temperature": 4.2, "humidity": 65},
   "timestamp": "2025-11-12T20:15:30Z"
 }
@@ -27,55 +28,52 @@ POST /logs
 
 Query them:
 ```
-GET /logs?tags=fridge-1&level=warning&since=2025-11-12
+GET /api/logs?group=restaurant-a:*&level=warning
 ```
 
-Get AI insights:
+View in dashboard:
 ```
-GET /analytics/report?tags=fridge-1&days=7
+http://localhost:8080
 ```
 
-Komfyrvakt handles storage, querying, graphing, and AI analysis.
+Komfyrvakt handles storage, querying, visualization, and AI analysis.
 
 ## Features
 
 - ⚡ **Fast** - Redis-backed hot storage for recent logs
-- 🔍 **Flexible** - Tag-based filtering (no rigid schemas)
-- 🤖 **AI Analytics** - Automated pattern detection and reports
-- 📊 **Dashboard** - React-based real-time log viewer
+- 🗂️ **Group Organization** - Hierarchical grouping with prefix queries
+- 🏷️ **Tag Filtering** - Flexible tag-based filtering
+- 📊 **Dashboard** - SvelteKit real-time log viewer with auto-refresh
+- 🤖 **AI Analytics** - Automated pattern detection (coming soon)
 - 🐳 **Self-hostable** - Docker Compose for easy deployment
 - ☁️ **Cloud-ready** - Runs on GCP Cloud Run (or any cloud)
 - 💰 **Cost-effective** - Optimized for free tier
+- 🔐 **Secure** - API key authentication
 
 ## Architecture
 
 ```
 Your Apps/Sensors
-    ↓ POST /logs
-Komfyrvakt API (FastAPI)
-    ↓
-Redis (hot logs, fast queries)
-    ↓ (optional background job)
-Firestore/BigQuery (cold storage)
-    ↓
-AI Service (Gemini/OpenAI)
-    ↓
-Dashboard (React)
+    ↓ POST /api/logs
+Komfyrvakt (Single Server - Port 8080)
+    ├── API Routes (/api/*)
+    │   └── Redis (log storage with TTL)
+    └── Dashboard (/) - SvelteKit UI
 ```
 
-**Tag-based organization:**
-- No complex tenancy
-- Filter by any combination of tags
-- `tags: ["production", "api-gateway", "europe"]`
+**Organization:**
+- **Groups** - Hierarchical (e.g., `restaurant-a:fridge-1`, `service:api:prod`)
+- **Tags** - Flexible filtering (e.g., `["temperature", "alert", "critical"]`)
+- Query by group prefix: `?group=restaurant-a:*`
 
 ## Tech Stack
 
 - **Backend**: Python + FastAPI
-- **Cache**: Redis (recent logs, fast access)
-- **Storage**: Firestore or BigQuery (long-term, optional)
-- **AI**: Gemini / OpenAI
-- **Frontend**: React + Vite + TypeScript  
-- **Deployment**: Docker Compose or Cloud Run
+- **Frontend**: SvelteKit + TypeScript + TailwindCSS
+- **Cache**: Redis (48-hour retention with TTL)
+- **Storage**: Optional cold storage (Firestore/BigQuery)
+- **AI**: Gemini / OpenAI (coming soon)
+- **Deployment**: Single server (Docker Compose or Cloud Run)
 - **Shared**: `reusables.python` library
 
 ## Quick Start
@@ -89,33 +87,29 @@ docker-compose up
 ```
 
 **Services start automatically:**
-- API: `http://localhost:8080`
-- Dashboard: `http://localhost:3000`
-- Redis: `localhost:6379`
+- **Everything on one server:** `http://localhost:8080`
+- Dashboard: `http://localhost:8080/`
+- API: `http://localhost:8080/api/*`
+- API Docs: `http://localhost:8080/api/docs`
+- Redis: Internal
 
-**On first run, an API key is auto-generated. Check API logs for the key.**
+**On first run, an API key is auto-generated. Check terminal for the key.**
 
 ### Local Development (Without Docker)
 
-**Option 1: Run both with script**
+**Step 1: Build dashboard (one-time)**
 ```powershell
-.\start-local.ps1
+.\build-dashboard.ps1
 ```
 
-**Option 2: Run separately**
+**Step 2: Run API**
 ```powershell
-# Terminal 1 - API
 cd api
 pip install -r requirements.txt
 python main.py
-
-# Terminal 2 - Dashboard
-cd dashboard
-npm install
-npm run dev
 ```
 
-Visit `http://localhost:3000` and enter your API key!
+**Visit** `http://localhost:8080` - Dashboard loads, enter API key from terminal!
 
 ### Cloud Deployment (GCP)
 
@@ -131,7 +125,7 @@ Authorization: Bearer kmf_your_api_key_here
 ### Send Logs
 
 ```bash
-POST /logs
+POST /api/logs
 Headers:
   Authorization: Bearer kmf_your_api_key_here
   Content-Type: application/json
@@ -140,46 +134,42 @@ Body:
 {
   "message": "Request completed",
   "level": "info",
-  "tags": ["api", "production"],
-  "data": {"duration_ms": 45, "status": 200},
-  "timestamp": "2025-11-12T20:15:30Z"
+  "group": "service:api:prod",
+  "tags": ["performance"],
+  "data": {"duration_ms": 45, "status": 200}
 }
 ```
 
 ### Query Logs
 
 ```bash
-GET /logs?tags=api,production&level=error&since=2025-11-12&limit=100
+GET /api/logs?group=service:api:*&level=error&limit=100
 Headers:
   Authorization: Bearer kmf_your_api_key_here
 ```
 
-Returns recent logs matching filters.
-
-### Get AI Insights
-
-```bash
-GET /analytics/report?tags=fridge-1&hours=24
-```
-
-Returns AI-generated summary, anomaly detection, and recommendations.
+**Filters:** `group`, `tags`, `level`, `since`, `until`, `source`, `limit`
 
 ### Dashboard
 
-Simple web UI for:
-- Live log streaming
-- Filter by tags, level, time
-- Graphs and charts
-- AI insights panel
+Visit `http://localhost:8080` for web UI:
+- ✅ Real-time log viewer (auto-refresh every 5s)
+- ✅ Filter by group, tags, level
+- ✅ Color-coded log levels
+- ✅ Expandable data fields
+- ✅ Responsive design
+
+**See [DOCS.md](DOCS.md) for complete API reference.**
 
 ## Log Structure
 
 ```json
 {
-  "id": "log_abc123",
+  "id": "log_20251112201530_abc123",
   "message": "Temperature too high",
   "level": "warning",
-  "tags": ["fridge-1", "building-a"],
+  "group": "restaurant-a:fridge-1",
+  "tags": ["temperature", "alert"],
   "data": {
     "temperature": 8.5,
     "threshold": 6.0
@@ -203,8 +193,9 @@ Komfyrvakt/
 │   ├── utils/            # Helpers
 │   ├── requirements.txt
 │   └── Dockerfile
-├── dashboard/            # Frontend (SvelteKit) - Coming soon
-│   └── README.md
+├── dashboard/            # Frontend (SvelteKit + TypeScript + Tailwind)
+│   ├── src/             # Svelte components and routes
+│   └── build/           # Built static files (served by API)
 ├── docker-compose.yml    # Self-hosting (runs both)
 ├── README.md             # This file
 ├── DOCS.md               # API documentation
@@ -221,7 +212,9 @@ Built for developers who want logging without the enterprise overhead.
 
 ## Status
 
-🚧 **In Development** - Simple, self-hostable logging with AI analytics.
+✅ **Core Functionality Working** - Log ingestion, querying, dashboard live!
+
+🚧 **In Progress** - AI analytics, cold storage, Docker deployment
 
 ---
 
