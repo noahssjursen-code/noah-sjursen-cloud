@@ -13,7 +13,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from reusables.common import get_greeting, get_library_info
-from reusables.redis_client import get_redis_client, make_key
+from reusables.redis import get_redis_client, make_key
 
 app = FastAPI(
     title="FirstApi",
