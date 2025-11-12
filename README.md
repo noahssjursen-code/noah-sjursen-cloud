@@ -12,16 +12,18 @@ Simple FastAPI service deployed to GCP Cloud Run. Demonstrates shared library pa
 
 - Python + FastAPI
 - Google Cloud Run
-- Terraform (for infrastructure)
+- Redis (shared server)
 
 ## Structure
 
 ```
 dataplatform/
-├── iac/terraform/     # Infrastructure as Code
+├── iac/
+│   ├── redis/         # Redis server (e2-micro, free tier)
+│   └── networking/    # VPC connectors
 └── projects/
-    ├── reusables/     # Shared utilities
-    └── FirstApi/      # Deployed API
+    ├── reusables/     # Shared utilities (Redis client, etc.)
+    └── FirstApi/      # Deployed API with Redis integration
 ```
 
 ## Run Locally
