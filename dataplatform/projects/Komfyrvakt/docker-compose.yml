@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Komfyrvakt API (Python/FastAPI)
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: komfyrvakt-api
+    ports:
+      - "8080:8080"
+    environment:
+      - KOMFYRVAKT_API_KEY=${KOMFYRVAKT_API_KEY:-}  # Auto-generated if not set
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ENVIRONMENT=local
+      - LOG_RETENTION_HOURS=48
+      - PORT=8080
+    depends_on:
+      - redis
+    volumes:
+      - ./api:/app
+      - api-env:/app/.env-data  # Persist API key
+    restart: unless-stopped
+
+  # Redis (Log storage)
+  redis:
+    image: redis:7-alpine
+    container_name: komfyrvakt-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  # Dashboard (SvelteKit)
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: komfyrvakt-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+      - ORIGIN=http://localhost:3000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
+  api-env:
+    driver: local
+

@@ -1,0 +1,2 @@
+"""Komfyrvakt data models."""
+
