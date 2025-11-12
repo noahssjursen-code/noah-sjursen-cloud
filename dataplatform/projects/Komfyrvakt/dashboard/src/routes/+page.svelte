@@ -1,31 +1,29 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import LogViewer from '../components/LogViewer.svelte';
-  import FilterPanel from '../components/FilterPanel.svelte';
+  import GroupList from '../components/GroupList.svelte';
+  import AnalysisPanel from '../components/AnalysisPanel.svelte';
   
-  let apiKey = '';
-  let isAuthenticated = false;
+  // Auto-load API key from build-time environment variable or localStorage
+  let apiKey = import.meta.env.VITE_API_KEY || '';
+  let isAuthenticated = !!apiKey;
+  let selectedGroup = '';
+  let showAnalysis = false;
   
   onMount(() => {
-    // Check for saved API key in localStorage
-    const saved = localStorage.getItem('komfyrvakt_api_key');
-    if (saved) {
-      apiKey = saved;
-      isAuthenticated = true;
+    // If not in build, try localStorage as fallback
+    if (!apiKey) {
+      const saved = localStorage.getItem('komfyrvakt_api_key');
+      if (saved) {
+        apiKey = saved;
+        isAuthenticated = true;
+      }
     }
   });
   
-  function handleLogin() {
-    if (apiKey.startsWith('kmf_')) {
-      localStorage.setItem('komfyrvakt_api_key', apiKey);
-      isAuthenticated = true;
-    }
-  }
-  
-  function handleLogout() {
-    localStorage.removeItem('komfyrvakt_api_key');
-    apiKey = '';
-    isAuthenticated = false;
+  function handleGroupSelect(group: string) {
+    selectedGroup = group;
+    showAnalysis = false;  // Reset analysis when switching groups
   }
 </script>
 
@@ -39,58 +37,58 @@
   </div>
 
   {#if !isAuthenticated}
-    <!-- Login Form -->
+    <!-- No API Key Found -->
     <div class="max-w-md mx-auto mt-16">
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-2xl font-semibold mb-4">Enter API Key</h2>
-        <p class="text-gray-600 mb-4">
-          Enter your Komfyrvakt API key to view logs.
+      <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h2 class="text-2xl font-semibold text-red-900 mb-4">⚠️ Configuration Error</h2>
+        <p class="text-red-800 mb-4">
+          API key not found. The dashboard was not built correctly.
         </p>
-        
-        <form on:submit|preventDefault={handleLogin}>
-          <input
-            type="text"
-            bind:value={apiKey}
-            placeholder="kmf_your_api_key_here"
-            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent mb-4"
-          />
-          <button
-            type="submit"
-            class="w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition"
-          >
-            Continue
-          </button>
-        </form>
-        
-        <p class="text-sm text-gray-500 mt-4">
-          Find your API key in the terminal output when you first ran Komfyrvakt.
+        <p class="text-sm text-red-700">
+          Run: <code class="bg-red-100 px-2 py-1 rounded">.\build-dashboard.ps1</code> to rebuild with API key.
         </p>
       </div>
     </div>
   {:else}
     <!-- Dashboard -->
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-end items-center mb-6">
       <div class="flex gap-4 items-center">
-        <span class="text-sm text-gray-600">Connected</span>
         <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+        <span class="text-sm text-gray-600">Connected</span>
       </div>
-      <button
-        on:click={handleLogout}
-        class="text-sm text-gray-600 hover:text-gray-900"
-      >
-        Logout
-      </button>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <!-- Filters -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <!-- Groups Sidebar -->
       <div class="lg:col-span-1">
-        <FilterPanel />
+        <GroupList {apiKey} {selectedGroup} onGroupSelect={handleGroupSelect} />
       </div>
       
-      <!-- Log Viewer -->
-      <div class="lg:col-span-3">
-        <LogViewer {apiKey} />
+      <!-- Main Content -->
+      <div class="lg:col-span-4">
+        <div class="mb-4 flex justify-between items-center">
+          <div>
+            {#if selectedGroup}
+              <h2 class="text-xl font-semibold">Group: <span class="font-mono text-orange-600">{selectedGroup}</span></h2>
+            {:else}
+              <h2 class="text-xl font-semibold">All Logs</h2>
+            {/if}
+          </div>
+          <button
+            on:click={() => showAnalysis = !showAnalysis}
+            class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition text-sm font-medium"
+          >
+            {showAnalysis ? 'Hide' : 'Show'} AI Analysis
+          </button>
+        </div>
+        
+        {#if showAnalysis}
+          <div class="mb-6">
+            <AnalysisPanel {apiKey} group={selectedGroup || undefined} />
+          </div>
+        {/if}
+        
+        <LogViewer {apiKey} group={selectedGroup || undefined} />
       </div>
     </div>
   {/if}

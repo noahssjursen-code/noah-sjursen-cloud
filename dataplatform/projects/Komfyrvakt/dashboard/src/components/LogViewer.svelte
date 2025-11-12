@@ -3,6 +3,7 @@
   import { fetchLogs, type StoredLog } from '../lib/api';
   
   export let apiKey: string;
+  export let group: string | undefined = undefined;
   
   let logs: StoredLog[] = [];
   let loading = true;
@@ -14,12 +15,17 @@
     try {
       loading = true;
       error = '';
-      logs = await fetchLogs(apiKey, { limit: 100 });
+      logs = await fetchLogs(apiKey, { group, limit: 100 });
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load logs';
     } finally {
       loading = false;
     }
+  }
+  
+  // Reload when group changes
+  $: if (group !== undefined) {
+    loadLogs();
   }
   
   onMount(() => {

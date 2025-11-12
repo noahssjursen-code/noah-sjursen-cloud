@@ -104,3 +104,49 @@ export async function purgeLog(
   return response.result;
 }
 
+export async function fetchGroups(apiKey: string): Promise<string[]> {
+  const response = await apiRequest<{ status: string; groups: string[] }>(
+    '/groups',
+    apiKey
+  );
+  return response.groups;
+}
+
+export interface AnalysisResult {
+  timestamp: string;
+  group?: string;
+  aggregation: {
+    total_logs: number;
+    level_counts: Record<string, number>;
+    tag_counts: Record<string, number>;
+    data_fields: Record<string, any>;
+  };
+  ai_insights: string;
+  analyzed_logs: number;
+}
+
+export interface AnalysisResponse {
+  status: string;
+  cached: boolean;
+  analysis: AnalysisResult;
+}
+
+export async function analyzeLog(
+  apiKey: string,
+  group?: string,
+  refresh: boolean = false
+): Promise<AnalysisResponse> {
+  const params = new URLSearchParams();
+  if (group) params.set('group', group);
+  if (refresh) params.set('refresh', 'true');
+
+  const queryString = params.toString();
+  const endpoint = `/analyze${queryString ? `?${queryString}` : ''}`;
+
+  return apiRequest<AnalysisResponse>(
+    endpoint,
+    apiKey,
+    { method: 'POST' }
+  );
+}
+

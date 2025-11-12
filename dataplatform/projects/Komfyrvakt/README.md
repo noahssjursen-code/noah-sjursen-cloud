@@ -78,6 +78,8 @@ Komfyrvakt (Single Server - Port 8080)
 
 ## Quick Start
 
+**First time setup?** See [SETUP.md](SETUP.md) for detailed instructions.
+
 ### Self-Hosted (Docker Compose)
 
 ```bash
@@ -97,19 +99,32 @@ docker-compose up
 
 ### Local Development (Without Docker)
 
-**Step 1: Build dashboard (one-time)**
+**Quick Start (Automatic):**
 ```powershell
-.\build-dashboard.ps1
+.\start.ps1
 ```
 
-**Step 2: Run API**
-```powershell
-cd api
-pip install -r requirements.txt
-python main.py
-```
+This will:
+1. Install API dependencies
+2. Build dashboard
+3. Start the server
 
 **Visit** `http://localhost:8080` - Dashboard loads, enter API key from terminal!
+
+**Note:** AI features require `GEMINI_API_KEY` in `.env` file. Get free key at https://aistudio.google.com/apikey
+
+**Manual (Step-by-step):**
+```powershell
+# 1. Build dashboard
+.\build-dashboard.ps1
+
+# 2. Install API deps
+cd api
+pip install -r requirements.txt
+
+# 3. Run server
+python main.py
+```
 
 ### Cloud Deployment (GCP)
 

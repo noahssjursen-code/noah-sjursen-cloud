@@ -16,6 +16,7 @@ services:
       - ENVIRONMENT=local
       - LOG_RETENTION_HOURS=48
       - PORT=8080
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     depends_on:
       - redis
     volumes:

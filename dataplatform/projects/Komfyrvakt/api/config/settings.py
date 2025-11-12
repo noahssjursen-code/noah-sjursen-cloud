@@ -6,6 +6,16 @@ Environment-based settings for self-hosting or cloud deployment.
 import os
 import secrets
 from typing import Literal
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file from project root
+env_path = Path(__file__).parent.parent.parent / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f"✅ Loaded environment from {env_path}")
+else:
+    print(f"⚠️  No .env file found at {env_path}")
 
 
 class Settings:
@@ -26,10 +36,14 @@ class Settings:
     LOG_RETENTION_HOURS: int = int(os.getenv('LOG_RETENTION_HOURS', '48'))  # How long logs stay in Redis
     COLD_STORAGE: Literal['none', 'gcs', 'firestore'] = os.getenv('COLD_STORAGE', 'none')
     
-    # AI Settings (future)
-    AI_PROVIDER: Literal['gemini', 'openai', 'none'] = os.getenv('AI_PROVIDER', 'none')
+    # AI Settings
     GEMINI_API_KEY: str = os.getenv('GEMINI_API_KEY', '')
     OPENAI_API_KEY: str = os.getenv('OPENAI_API_KEY', '')
+    
+    @classmethod
+    def has_ai_enabled(cls) -> bool:
+        """Check if AI is configured and available."""
+        return bool(cls.GEMINI_API_KEY or cls.OPENAI_API_KEY)
     
     # Service Settings
     SERVICE_NAME: str = "Komfyrvakt"

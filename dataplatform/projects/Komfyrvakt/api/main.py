@@ -18,11 +18,18 @@ from datetime import datetime
 
 from models.log import LogEntry, StoredLog, LogLevel, LogQuery
 from services.log_service import LogService
+from services.ai_service import AIService
 from utils.auth import verify_api_key
 from config.settings import settings
 
 # Ensure API key is set
 settings.ensure_api_key()
+
+# Debug: Check if Gemini key is loaded
+if settings.has_ai_enabled():
+    print(f"✅ Gemini API key loaded (ends with: ...{settings.GEMINI_API_KEY[-8:]})")
+else:
+    print("⚠️  No Gemini API key found - AI features disabled")
 
 app = FastAPI(
     title="Komfyrvakt",
@@ -126,6 +133,26 @@ def get_log_by_id(log_id: str):
     return log
 
 
+@app.get("/api/groups", dependencies=[Depends(verify_api_key)])
+def get_groups():
+    """
+    Get all unique groups from logs.
+    
+    Requires API key in Authorization header.
+    
+    Returns list of group identifiers for filtering.
+    """
+    try:
+        groups = LogService.get_groups()
+        return {
+            "status": "success",
+            "groups": groups,
+            "count": len(groups)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get groups: {str(e)}")
+
+
 @app.get("/api/stats", dependencies=[Depends(verify_api_key)])
 def get_stats():
     """
@@ -167,6 +194,84 @@ def purge_logs(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to purge logs: {str(e)}")
+
+
+@app.post("/api/analyze", dependencies=[Depends(verify_api_key)])
+def analyze_logs(
+    group: Optional[str] = Query(default=None, description="Group to analyze (None = all logs)"),
+    refresh: bool = Query(default=False, description="Force new analysis (ignore cache)")
+):
+    """
+    Analyze logs using AI with dynamic data aggregation.
+    
+    Requires API key in Authorization header.
+    
+    Features:
+    - Dynamically aggregates data fields from log.data
+    - Provides AI-powered insights using Gemini
+    - Caches results for 1 hour (unless refresh=true)
+    
+    Examples:
+        POST /api/analyze                        # Analyze all logs
+        POST /api/analyze?group=restaurant-a:*   # Analyze specific group
+        POST /api/analyze?refresh=true           # Force new analysis
+    """
+    try:
+        # Build query for logs
+        query = LogQuery(
+            group=group,
+            limit=1000  # Analyze up to 1000 logs
+        )
+        
+        # Fetch logs
+        logs = LogService.query_logs(query)
+        
+        if not logs:
+            return {
+                "status": "success",
+                "cached": False,
+                "analysis": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "group": group,
+                    "aggregation": {
+                        "total_logs": 0,
+                        "level_counts": {},
+                        "tag_counts": {},
+                        "data_fields": {}
+                    },
+                    "ai_insights": "No logs found to analyze in this group.",
+                    "analyzed_logs": 0
+                }
+            }
+        
+        # Check if AI is enabled
+        if not settings.has_ai_enabled():
+            # Still return aggregation, just no AI insights
+            aggregation = AIService._aggregate_data(logs)
+            return {
+                "status": "success",
+                "cached": False,
+                "analysis": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "group": group,
+                    "aggregation": aggregation,
+                    "ai_insights": "AI analysis not configured. Set GEMINI_API_KEY in .env file to enable AI insights.",
+                    "analyzed_logs": len(logs)
+                }
+            }
+        
+        # Analyze with AI
+        result = AIService.analyze_logs(
+            logs,
+            group=group,
+            use_cache=not refresh,
+            api_key=settings.GEMINI_API_KEY
+        )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to analyze logs: {str(e)}")
 
 
 # Serve dashboard static files (mounted AFTER all API routes)

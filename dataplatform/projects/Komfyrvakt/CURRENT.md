@@ -13,13 +13,15 @@ Last updated: November 12, 2025
 - [x] Dockerfile for API container
 
 ### API Endpoints
-- [x] `POST /logs` - Log ingestion with API key auth
-- [x] `GET /logs` - Query logs with filters (group, tags, level, time, source)
-- [x] `GET /logs/{id}` - Get specific log by ID
-- [x] `DELETE /purge` - Purge logs (all or by group)
-- [x] `GET /stats` - Platform statistics
-- [x] `GET /health` - Health check
-- [x] FastAPI docs at `/docs`
+- [x] `POST /api/logs` - Log ingestion with API key auth
+- [x] `GET /api/logs` - Query logs with filters (group, tags, level, time, source)
+- [x] `GET /api/logs/{id}` - Get specific log by ID
+- [x] `GET /api/groups` - List all unique log groups
+- [x] `POST /api/analyze` - AI-powered log analysis with caching
+- [x] `DELETE /api/purge` - Purge logs (all or by group)
+- [x] `GET /api/stats` - Platform statistics
+- [x] `GET /api/health` - Health check
+- [x] FastAPI docs at `/api/docs`
 
 ### Redis Integration
 - [x] Log storage in Redis with TTL
@@ -30,13 +32,36 @@ Last updated: November 12, 2025
 - [x] Uses shared reusables.python.redis library
 - [x] Key namespacing (komfyrvakt:logs:*, komfyrvakt:index:*)
 
+### AI Integration
+- [x] Gemini AI client in reusables.python.gemini
+- [x] AI log analysis service with data aggregation
+- [x] Redis caching for AI results
+- [x] Configurable via GEMINI_API_KEY environment variable
+- [x] Automatic detection and graceful error handling
+
+### Dashboard (SvelteKit)
+- [x] Built with SvelteKit + TailwindCSS
+- [x] API key authentication (localStorage + input)
+- [x] Real-time log viewer with auto-refresh
+- [x] Group list sidebar with click-to-filter
+- [x] Log filtering by level, tags, search
+- [x] AI Analysis panel with loading states
+- [x] Aggregated data display (counts, averages)
+- [x] Single-server deployment (API serves dashboard)
+- [x] Responsive design
+
 ### Documentation
 - [x] Main README with architecture and examples
 - [x] DOCS.md with complete API reference
+- [x] SETUP.md with detailed setup instructions
 - [x] CURRENT.md for tracking progress
 - [x] API authentication documented
 - [x] Group vs Tags best practices
 - [x] Client examples (Python, TypeScript, cURL, PowerShell)
+
+### Automation
+- [x] `start.ps1` - One-command startup (install deps, build, run)
+- [x] `build-dashboard.ps1` - Dashboard builder with API key injection
 
 ## 🚧 In Progress
 
@@ -45,27 +70,27 @@ Nothing currently.
 ## 📋 To Do
 
 ### Core Features
-- [ ] Batch log ingestion endpoint (`POST /logs/batch`)
+- [ ] Batch log ingestion endpoint (`POST /api/logs/batch`)
 - [ ] Log level statistics endpoint
 - [ ] Tag autocomplete/suggestion endpoint
+- [ ] WebSocket for real-time log streaming
 
-### AI Analytics (Future)
-- [ ] AI service for log analysis (services/ai_service.py)
+### Dashboard Enhancements
+- [ ] Charts and graphs for aggregated data
+- [ ] Export logs to JSON/CSV
+- [ ] Date range picker for time filtering
+- [ ] Dark mode toggle
+
+### AI Features
 - [ ] Anomaly detection endpoint
-- [ ] AI report generation endpoint
-- [ ] Integrate Gemini/OpenAI with configurable provider
-
-### Dashboard (Future)
-- [ ] React frontend with Vite + TypeScript
-- [ ] Real-time log streaming (WebSocket)
-- [ ] Interactive filtering UI
-- [ ] Charts and graphs
-- [ ] AI insights panel
+- [ ] Pattern recognition in logs
+- [ ] OpenAI provider support (currently only Gemini)
+- [ ] AI report scheduling and history
 
 ### Deployment
-- [ ] Docker Compose file for self-hosting
 - [ ] GCP deployment script (gcp_deployment/deploy.ps1)
-- [ ] Environment setup documentation
+- [ ] Cloud Build configuration
+- [ ] Automated CI/CD with GitHub Actions
 
 ### Cold Storage (Optional)
 - [ ] Background job to move old logs
@@ -80,10 +105,10 @@ Nothing currently.
 
 ## 🎯 Next Steps
 
-1. **Test basic functionality** - POST logs, query them
-2. **Add batch ingestion** - More efficient for high-volume
-3. **Deploy to Cloud Run** - Get it live
-4. **Build simple dashboard** - React frontend
+1. **Test AI analysis** - Verify Gemini integration works end-to-end
+2. **Add batch ingestion** - More efficient for high-volume logging
+3. **Deploy to Cloud Run** - Get it live on GCP
+4. **Build SDK clients** - Python, JavaScript, Go libraries
 
 ## 🐛 Known Issues
 
@@ -96,6 +121,9 @@ None currently.
 - Tag-based filtering allows flexible log organization
 - No multi-tenancy - simplified version focused on ease of use
 - Self-hostable design - can run anywhere (Docker, GCP, local)
+- AI features require `GEMINI_API_KEY` in `.env` file
+- Dashboard and API run on single port (8080) for easy deployment
+- Uses reusable libraries from shared `reusables` folder
 
 ## 💡 Ideas / Future Enhancements
 

@@ -190,6 +190,35 @@ class LogService:
         return logs[:query.limit]
     
     @classmethod
+    def get_groups(cls) -> list:
+        """
+        Get all unique groups from stored logs.
+        
+        Returns:
+            List of unique group identifiers
+        """
+        r = get_redis_client()
+        
+        # Find all group index keys
+        group_pattern = f"{cls.INDEX_PREFIX}:group:*"
+        group_keys = find_keys(group_pattern, limit=10000)
+        
+        # Extract unique groups
+        groups = set()
+        for key in group_keys:
+            # Key format: komfyrvakt:index:group:{group_name}:{log_id}
+            parts = key.split(':')
+            # Get everything between 'group' and the log_id (last part)
+            if len(parts) >= 4:
+                # Reconstruct group name (could have colons in it)
+                group = ':'.join(parts[3:-1])
+                if group:
+                    groups.add(group)
+        
+        # Sort groups alphabetically
+        return sorted(list(groups))
+    
+    @classmethod
     def get_stats(cls) -> dict:
         """
         Get statistics about stored logs.
