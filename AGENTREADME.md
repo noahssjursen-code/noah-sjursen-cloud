@@ -7,7 +7,21 @@ Each folder defining a module or service contains an `AGENTREADTHIS.md` file wit
 ## Current Structure
 
 - `dataplatform/iac/` - Infrastructure automation scripts
-- `dataplatform/projects/reusables/` - Shared libraries
+  - `gcloud-commands/` - Reusable gcloud CLI commands
+- `dataplatform/projects/` - Applications and libraries
+  - `reusables/` - Shared libraries
+  - Individual project folders (each with AGENTREADTHIS.md)
 
-Read the `AGENTREADTHIS.md` in each folder for specific guidance.
+## Technology-Specific Guidelines
+
+Read these before working on specific types of projects:
+
+- `dataplatform/projects/AGENTREADTHIS-SVELTEKIT.md` - SvelteKit app patterns
+- `dataplatform/projects/AGENTREADTHIS-FASTAPI.md` - FastAPI backend patterns
+- `dataplatform/projects/AGENTREADTHIS-CLOUDRUN.md` - Cloud Run deployment patterns
+- `dataplatform/projects/reusables/python/AGENTREADTHIS.md` - Python library creation blueprint
+
+## Navigation
+
+Always read the `AGENTREADTHIS.md` in each folder before making changes.
 
