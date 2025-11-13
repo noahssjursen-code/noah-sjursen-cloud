@@ -13,12 +13,20 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 print(f"Reusables path: {reusables_path}")
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from pydantic import BaseModel
 from auth import oauth, SESSION_SECRET
-from reusables.python.gcp import check_user_has_project_access, list_all_resources
+from reusables.python.gcp import (
+    check_user_has_project_access, 
+    list_all_resources, 
+    get_user_role_level,
+    list_project_iam_members,
+    assign_role_to_user,
+    revoke_role_from_user
+)
 
 app = FastAPI(
     title="Cloud Control Center",
@@ -29,6 +37,12 @@ app = FastAPI(
 
 # Add session middleware
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
+
+
+# Pydantic models for request bodies
+class RoleAssignmentRequest(BaseModel):
+    email: str
+    role: str  # viewer, operator, or admin
 
 
 @app.get("/api")
@@ -110,17 +124,100 @@ async def logout(request: Request):
 
 @app.get("/api/user")
 async def get_user(request: Request):
-    """Get current logged-in user."""
+    """Get current logged-in user with role level."""
     user = request.session.get('user')
     if not user:
         return JSONResponse({"authenticated": False}, status_code=401)
+    
+    # Get user's role level
+    email = user.get('email', '')
+    project_id = os.getenv('GCP_PROJECT_ID', 'noah-sjursen-cloud')
+    role_level = get_user_role_level(email, project_id)
     
     return {
         "authenticated": True,
         "email": user.get('email'),
         "name": user.get('name'),
-        "picture": user.get('picture')
+        "picture": user.get('picture'),
+        "role": role_level
     }
+
+
+@app.get("/api/users")
+async def get_users(request: Request):
+    """Get all users with Cloud Control Center roles."""
+    user = request.session.get('user')
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    # Check if user has access
+    email = user.get('email', '')
+    project_id = os.getenv('GCP_PROJECT_ID', 'noah-sjursen-cloud')
+    
+    if not check_user_has_project_access(email, project_id):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    
+    # Get user's role - only admins can view all users
+    role_level = get_user_role_level(email, project_id)
+    if role_level != 'admin':
+        return JSONResponse({"error": "Admin access required"}, status_code=403)
+    
+    try:
+        # Get all users with Cloud Control Center roles
+        users = list_project_iam_members(project_id, filter_cloud_control_only=True)
+        return {"users": users}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/users/assign-role")
+async def assign_role(request: Request, assignment: RoleAssignmentRequest):
+    """Assign a Cloud Control Center role to a user."""
+    user = request.session.get('user')
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    # Check if user has admin access
+    email = user.get('email', '')
+    project_id = os.getenv('GCP_PROJECT_ID', 'noah-sjursen-cloud')
+    role_level = get_user_role_level(email, project_id)
+    
+    if role_level != 'admin':
+        return JSONResponse({"error": "Admin access required"}, status_code=403)
+    
+    try:
+        result = assign_role_to_user(assignment.email, assignment.role, project_id)
+        if result['success']:
+            return {"success": True, "message": result['message']}
+        else:
+            return JSONResponse({"error": result['message']}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/users/revoke-role")
+async def revoke_role(request: Request, assignment: RoleAssignmentRequest):
+    """Revoke a Cloud Control Center role from a user."""
+    user = request.session.get('user')
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    
+    # Check if user has admin access
+    email = user.get('email', '')
+    project_id = os.getenv('GCP_PROJECT_ID', 'noah-sjursen-cloud')
+    role_level = get_user_role_level(email, project_id)
+    
+    if role_level != 'admin':
+        return JSONResponse({"error": "Admin access required"}, status_code=403)
+    
+    try:
+        result = revoke_role_from_user(assignment.email, assignment.role, project_id)
+        if result['success']:
+            return {"success": True, "message": result['message']}
+        else:
+            return JSONResponse({"error": result['message']}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 # Mount dashboard (after all API routes)

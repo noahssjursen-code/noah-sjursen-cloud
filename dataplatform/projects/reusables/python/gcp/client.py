@@ -278,12 +278,46 @@ def list_all_resources(project_id: Optional[str] = None) -> Dict[str, List[Dict[
     }
 
 
-def list_project_iam_members(project_id: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_user_role_level(email: str, project_id: Optional[str] = None) -> str:
+    """
+    Get the highest Cloud Control Center role level for a user.
+    
+    Args:
+        email: User email to check
+        project_id: GCP project ID (defaults to GCP_PROJECT_ID env var)
+    
+    Returns:
+        'admin', 'operator', 'viewer', or 'none'
+    
+    Example:
+        level = get_user_role_level("user@gmail.com")
+        if level == 'admin':
+            allow_delete_operations()
+    """
+    roles = get_user_project_roles(email, project_id)
+    
+    # Check for Cloud Control Center roles (highest to lowest)
+    if any('cloudControlCenterAdmin' in role for role in roles):
+        return 'admin'
+    if any('cloudControlCenterOperator' in role for role in roles):
+        return 'operator'
+    if any('cloudControlCenterViewer' in role for role in roles):
+        return 'viewer'
+    
+    # User has some IAM access but not a Cloud Control Center role
+    if roles:
+        return 'viewer'  # Default to viewer if they have any project access
+    
+    return 'none'
+
+
+def list_project_iam_members(project_id: Optional[str] = None, filter_cloud_control_only: bool = False) -> List[Dict[str, Any]]:
     """
     List all IAM members with their roles in a project.
     
     Args:
         project_id: GCP project ID (defaults to GCP_PROJECT_ID env var)
+        filter_cloud_control_only: If True, only return users with Cloud Control Center roles
     
     Returns:
         List of members with their roles
@@ -311,13 +345,149 @@ def list_project_iam_members(project_id: Optional[str] = None) -> List[Dict[str,
             role = binding.get('role', '')
             for member in binding.get('members', []):
                 if member not in members_map:
-                    members_map[member] = {'member': member, 'roles': []}
+                    # Extract email from member string (e.g., "user:email@example.com" -> "email@example.com")
+                    email = member.split(':', 1)[1] if ':' in member else member
+                    member_type = member.split(':', 1)[0] if ':' in member else 'unknown'
+                    members_map[member] = {
+                        'member': member,
+                        'email': email,
+                        'type': member_type,
+                        'roles': [],
+                        'cloudControlRoles': []
+                    }
                 members_map[member]['roles'].append(role)
+                
+                # Track Cloud Control Center roles separately
+                if 'cloudControlCenter' in role:
+                    role_name = role.split('/')[-1]  # Extract role name from full path
+                    members_map[member]['cloudControlRoles'].append(role_name)
         
-        return list(members_map.values())
+        members = list(members_map.values())
+        
+        # Filter if requested
+        if filter_cloud_control_only:
+            members = [m for m in members if m['cloudControlRoles']]
+        
+        # Only return user accounts (not service accounts) if filtering
+        if filter_cloud_control_only:
+            members = [m for m in members if m['type'] == 'user']
+        
+        return members
         
     except Exception as e:
-        print(f"❌ Error listing IAM members: {e}")
+        print(f"Error listing IAM members: {e}")
         return []
+
+
+def assign_role_to_user(email: str, role_name: str, project_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Assign a Cloud Control Center role to a user.
+    
+    Args:
+        email: User email address
+        role_name: Role name (viewer, operator, or admin)
+        project_id: GCP project ID (defaults to GCP_PROJECT_ID env var)
+    
+    Returns:
+        Dictionary with success status and message
+    
+    Example:
+        result = assign_role_to_user('user@example.com', 'viewer')
+        if result['success']:
+            print('Role assigned!')
+    """
+    if not project_id:
+        project_id = os.getenv('GCP_PROJECT_ID')
+    
+    # Map role names to full role paths
+    role_map = {
+        'viewer': f'projects/{project_id}/roles/cloudControlCenterViewer',
+        'operator': f'projects/{project_id}/roles/cloudControlCenterOperator',
+        'admin': f'projects/{project_id}/roles/cloudControlCenterAdmin'
+    }
+    
+    full_role = role_map.get(role_name.lower())
+    if not full_role:
+        return {
+            'success': False,
+            'message': f'Invalid role name: {role_name}. Must be viewer, operator, or admin.'
+        }
+    
+    try:
+        command = f'projects add-iam-policy-binding {project_id} --member=user:{email} --role={full_role}'
+        result = execute_gcloud_command(command)
+        
+        if result['success']:
+            return {
+                'success': True,
+                'message': f'Successfully assigned {role_name} role to {email}'
+            }
+        else:
+            return {
+                'success': False,
+                'message': result.get('error', 'Failed to assign role')
+            }
+            
+    except Exception as e:
+        return {
+            'success': False,
+            'message': f'Error assigning role: {str(e)}'
+        }
+
+
+def revoke_role_from_user(email: str, role_name: str, project_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Revoke a Cloud Control Center role from a user.
+    
+    Args:
+        email: User email address
+        role_name: Role name (viewer, operator, or admin)
+        project_id: GCP project ID (defaults to GCP_PROJECT_ID env var)
+    
+    Returns:
+        Dictionary with success status and message
+    
+    Example:
+        result = revoke_role_from_user('user@example.com', 'viewer')
+        if result['success']:
+            print('Role revoked!')
+    """
+    if not project_id:
+        project_id = os.getenv('GCP_PROJECT_ID')
+    
+    # Map role names to full role paths
+    role_map = {
+        'viewer': f'projects/{project_id}/roles/cloudControlCenterViewer',
+        'operator': f'projects/{project_id}/roles/cloudControlCenterOperator',
+        'admin': f'projects/{project_id}/roles/cloudControlCenterAdmin'
+    }
+    
+    full_role = role_map.get(role_name.lower())
+    if not full_role:
+        return {
+            'success': False,
+            'message': f'Invalid role name: {role_name}. Must be viewer, operator, or admin.'
+        }
+    
+    try:
+        command = f'projects remove-iam-policy-binding {project_id} --member=user:{email} --role={full_role}'
+        result = execute_gcloud_command(command)
+        
+        if result['success']:
+            return {
+                'success': True,
+                'message': f'Successfully revoked {role_name} role from {email}'
+            }
+        else:
+            return {
+                'success': False,
+                'message': result.get('error', 'Failed to revoke role')
+            }
+            
+    except Exception as e:
+        return {
+            'success': False,
+            'message': f'Error revoking role: {str(e)}'
+        }
 
 

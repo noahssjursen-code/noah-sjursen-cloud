@@ -5,22 +5,28 @@ GCP utilities for project access validation, IAM checking, and resource manageme
 from .client import (
     check_user_has_project_access,
     get_user_project_roles,
+    get_user_role_level,
     execute_gcloud_command,
     list_compute_instances,
     list_cloud_run_services,
     list_storage_buckets,
     list_all_resources,
     list_project_iam_members,
+    assign_role_to_user,
+    revoke_role_from_user,
 )
 
 __all__ = [
     'check_user_has_project_access',
     'get_user_project_roles',
+    'get_user_role_level',
     'execute_gcloud_command',
     'list_compute_instances',
     'list_cloud_run_services',
     'list_storage_buckets',
     'list_all_resources',
     'list_project_iam_members',
+    'assign_role_to_user',
+    'revoke_role_from_user',
 ]
 

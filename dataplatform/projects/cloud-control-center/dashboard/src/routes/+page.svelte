@@ -11,6 +11,10 @@
 	let applicationsExpanded = false;
 	let resources = null;
 	let loadingResources = false;
+	let users = [];
+	let loadingUsers = false;
+	let newUserEmail = '';
+	let newUserRole = 'viewer';
 	
 	onMount(async () => {
 		// Load theme preference
@@ -81,6 +85,74 @@
 	function logout() {
 		window.location.href = '/auth/logout';
 	}
+	
+	async function loadUsers() {
+		if (user?.role !== 'admin') return;
+		
+		loadingUsers = true;
+		try {
+			const response = await fetch('/api/users');
+			if (response.ok) {
+				const data = await response.json();
+				users = data.users;
+			} else {
+				console.error('Failed to load users');
+			}
+		} catch (error) {
+			console.error('Error loading users:', error);
+		} finally {
+			loadingUsers = false;
+		}
+	}
+	
+	async function assignRole() {
+		if (!newUserEmail || !newUserRole) return;
+		
+		try {
+			const response = await fetch('/api/users/assign-role', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email: newUserEmail, role: newUserRole })
+			});
+			
+			if (response.ok) {
+				newUserEmail = '';
+				newUserRole = 'viewer';
+				await loadUsers();
+			} else {
+				const error = await response.json();
+				alert(`Failed to assign role: ${error.error}`);
+			}
+		} catch (error) {
+			alert(`Error: ${error.message}`);
+		}
+	}
+	
+	async function revokeRole(email, role) {
+		if (!confirm(`Revoke ${role} role from ${email}?`)) return;
+		
+		try {
+			const response = await fetch('/api/users/revoke-role', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, role })
+			});
+			
+			if (response.ok) {
+				await loadUsers();
+			} else {
+				const error = await response.json();
+				alert(`Failed to revoke role: ${error.error}`);
+			}
+		} catch (error) {
+			alert(`Error: ${error.message}`);
+		}
+	}
+	
+	// Watch for section changes to load users when switching to user management
+	$: if (activeSection === 'user-management' && user?.role === 'admin' && users.length === 0) {
+		loadUsers();
+	}
 </script>
 
 <div class="min-h-screen {darkMode ? 'bg-zinc-950 text-gray-100' : 'bg-gray-50 text-gray-900'}">
@@ -116,7 +188,12 @@
 						<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-500'}">Checking auth...</span>
 					{:else if user && user.authenticated}
 						<div class="flex items-center gap-3">
-							<span class="text-sm {darkMode ? 'text-zinc-300' : 'text-gray-700'}">{user.email}</span>
+							<div class="flex flex-col items-end">
+								<span class="text-sm {darkMode ? 'text-zinc-300' : 'text-gray-700'}">{user.email}</span>
+								<span class="text-xs {darkMode ? 'text-zinc-600' : 'text-gray-500'} uppercase">
+									{user.role || 'viewer'}
+								</span>
+							</div>
 							<button 
 								on:click={logout}
 								class="text-xs {darkMode ? 'text-zinc-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} uppercase tracking-wider"
@@ -311,18 +388,127 @@
 						</div>
 					{:else if activeSection === 'users'}
 						<!-- User Management Section -->
-						<div class="{darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'} border">
-							<div class="{darkMode ? 'border-b border-zinc-800' : 'border-b border-gray-200'} px-6 py-4">
-								<h2 class="text-sm font-medium {darkMode ? 'text-zinc-300' : 'text-gray-700'} uppercase tracking-wider">
-									User Management
-								</h2>
+						{#if user?.role !== 'admin'}
+							<div class="{darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'} border">
+								<div class="p-6">
+									<p class="text-sm {darkMode ? 'text-zinc-400' : 'text-gray-600'}">
+										Admin access required to manage users.
+									</p>
+								</div>
 							</div>
-							<div class="p-6">
-								<p class="text-sm {darkMode ? 'text-zinc-400' : 'text-gray-600'}">
-									User management features coming soon...
-								</p>
+						{:else}
+							<!-- Add New User -->
+							<div class="{darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'} border mb-6">
+								<div class="{darkMode ? 'border-b border-zinc-800' : 'border-b border-gray-200'} px-6 py-4">
+									<h2 class="text-sm font-medium {darkMode ? 'text-zinc-300' : 'text-gray-700'} uppercase tracking-wider">
+										Assign Role to User
+									</h2>
+								</div>
+								<div class="p-6">
+									<form on:submit|preventDefault={assignRole} class="flex gap-4 items-end">
+										<div class="flex-1">
+											<label class="block text-xs font-medium {darkMode ? 'text-zinc-400' : 'text-gray-600'} mb-2">
+												User Email
+											</label>
+											<input
+												type="email"
+												bind:value={newUserEmail}
+												placeholder="user@example.com"
+												required
+												class="{darkMode ? 'bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500' : 'bg-white border-gray-300 text-gray-900'} w-full px-4 py-2 border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+											/>
+										</div>
+										<div class="w-48">
+											<label class="block text-xs font-medium {darkMode ? 'text-zinc-400' : 'text-gray-600'} mb-2">
+												Role
+											</label>
+											<select
+												bind:value={newUserRole}
+												class="{darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-gray-300 text-gray-900'} w-full px-4 py-2 border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+											>
+												<option value="viewer">Viewer</option>
+												<option value="operator">Operator</option>
+												<option value="admin">Admin</option>
+											</select>
+										</div>
+										<button
+											type="submit"
+											class="{darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white px-6 py-2 text-sm font-medium transition-colors"
+										>
+											Assign Role
+										</button>
+									</form>
+								</div>
 							</div>
-						</div>
+
+							<!-- Existing Users -->
+							<div class="{darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'} border">
+								<div class="{darkMode ? 'border-b border-zinc-800' : 'border-b border-gray-200'} px-6 py-4">
+									<h2 class="text-sm font-medium {darkMode ? 'text-zinc-300' : 'text-gray-700'} uppercase tracking-wider">
+										Users with Access
+									</h2>
+								</div>
+								<div class="p-6">
+									{#if loadingUsers}
+										<div class="text-center py-8">
+											<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 {darkMode ? 'border-zinc-400' : 'border-gray-900'}"></div>
+										</div>
+									{:else if users.length === 0}
+										<p class="text-sm {darkMode ? 'text-zinc-400' : 'text-gray-600'} text-center py-4">
+											No users with Cloud Control Center roles found.
+										</p>
+									{:else}
+										<div class="overflow-x-auto">
+											<table class="w-full">
+												<thead class="{darkMode ? 'border-b border-zinc-800' : 'border-b border-gray-200'}">
+													<tr>
+														<th class="text-left py-3 px-4 text-xs font-medium {darkMode ? 'text-zinc-400' : 'text-gray-600'} uppercase tracking-wider">
+															Email
+														</th>
+														<th class="text-left py-3 px-4 text-xs font-medium {darkMode ? 'text-zinc-400' : 'text-gray-600'} uppercase tracking-wider">
+															Roles
+														</th>
+														<th class="text-right py-3 px-4 text-xs font-medium {darkMode ? 'text-zinc-400' : 'text-gray-600'} uppercase tracking-wider">
+															Actions
+														</th>
+													</tr>
+												</thead>
+												<tbody>
+													{#each users as userItem}
+														<tr class="{darkMode ? 'border-b border-zinc-800' : 'border-b border-gray-200'}">
+															<td class="py-3 px-4 text-sm {darkMode ? 'text-zinc-300' : 'text-gray-900'}">
+																{userItem.email}
+															</td>
+															<td class="py-3 px-4">
+																<div class="flex flex-wrap gap-2">
+																	{#each userItem.cloudControlRoles as role}
+																		<span class="{darkMode ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-blue-50 text-blue-700 border-blue-200'} px-3 py-1 text-xs border">
+																			{role.replace('cloudControlCenter', '')}
+																		</span>
+																	{/each}
+																</div>
+															</td>
+															<td class="py-3 px-4 text-right">
+																<div class="flex justify-end gap-2">
+																	{#each userItem.cloudControlRoles as role}
+																		<button
+																			on:click={() => revokeRole(userItem.email, role.replace('cloudControlCenter', '').toLowerCase())}
+																			class="{darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} text-xs"
+																		>
+																			Revoke {role.replace('cloudControlCenter', '')}
+																		</button>
+																	{/each}
+																</div>
+															</td>
+														</tr>
+													{/each}
+												</tbody>
+											</table>
+										</div>
+									{/if}
+								</div>
+							</div>
+						{/if}
 					{/if}
 				</div>
 			</div>
