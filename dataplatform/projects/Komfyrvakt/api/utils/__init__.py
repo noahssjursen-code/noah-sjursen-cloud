@@ -1,2 +1,0 @@
-"""Komfyrvakt utilities."""
-

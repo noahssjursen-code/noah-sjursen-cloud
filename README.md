@@ -4,30 +4,11 @@ Personal cloud platform for production-grade projects and infrastructure experim
 
 ## About
 
-This repository houses my personal cloud infrastructure and projects on Google Cloud Platform. It's structured like a professional data platform with reusable libraries, infrastructure as code, and multiple deployed services.
+This repository houses my personal cloud infrastructure on Google Cloud Platform. It's structured like a professional data platform with reusable libraries and infrastructure as code, providing a foundation for future production-grade projects.
 
 ## Projects
 
-### 🔥 Komfyrvakt
-**Self-hostable logging service with AI analytics** | [Docs](dataplatform/projects/Komfyrvakt)
-
-- FastAPI backend + SvelteKit dashboard
-- Redis hot storage with smart caching
-- AI-powered log analysis (Gemini)
-- Time series trend detection
-- Group-based organization
-- One-command deployment
-
-**Status:** ✅ Production-ready | Self-hostable | GCP deployable
-
-### 🚀 FirstApi
-**Demo API with shared libraries** | [Live](https://firstapi-766963653213.us-central1.run.app) | [Docs](https://firstapi-766963653213.us-central1.run.app/docs)
-
-- Cloud Run deployment demonstration
-- Shared reusables integration
-- Redis connectivity example
-
-**Status:** ✅ Live on GCP Cloud Run
+Currently focused on building the reusable libraries foundation and infrastructure for future projects.
 
 ## Infrastructure
 
@@ -70,8 +51,8 @@ All infrastructure managed via PowerShell + `gcloud` CLI:
 - TailwindCSS (styling)
 
 **AI/ML:**
-- Google Gemini (log analysis, insights)
-- Structured JSON output for parsing
+- Google Gemini (text generation, structured output)
+- Reusable client wrapper for easy integration
 
 ## Repository Structure
 
@@ -82,13 +63,12 @@ noah-sjursen-cloud/
 │   │   ├── redis/              # Redis server scripts
 │   │   └── networking/         # VPC connector setup
 │   └── projects/
-│       ├── reusables/          # Shared libraries
-│       │   ├── python/         # Python utilities
-│       │   │   ├── redis/      # Redis client
-│       │   │   └── gemini/     # AI client
-│       │   └── go/             # Go utilities (planned)
-│       ├── Komfyrvakt/         # Logging service
-│       └── FirstApi/           # Demo API
+│       └── reusables/          # Shared libraries
+│           ├── python/         # Python utilities
+│           │   ├── redis/      # Redis client
+│           │   ├── gemini/     # AI client
+│           │   └── common/     # Common utilities
+│           └── go/             # Go utilities (planned)
 └── README.md                   # This file
 ```
 
@@ -113,26 +93,19 @@ Cross-project utilities designed for reuse:
 
 ## Quick Start
 
-### Run Komfyrvakt Locally
+### Setup Infrastructure
 
 ```powershell
-cd dataplatform/projects/Komfyrvakt
-.\start.ps1
+# Setup Redis server
+cd dataplatform/iac/redis
+.\setup-redis.ps1
+
+# Setup VPC connector for Cloud Run services
+cd ../networking
+.\setup-vpc-connector.ps1
 ```
 
-Automatically:
-1. Installs dependencies
-2. Builds dashboard
-3. Starts server on port 8080
-
-### Deploy to GCP
-
-```powershell
-cd dataplatform/projects/FirstApi
-.\deploy.ps1
-```
-
-Uses Cloud Build to deploy with buildpacks (no manual Docker).
+Infrastructure is managed via PowerShell scripts - simple, reproducible, no Terraform complexity.
 
 ## Development Philosophy
 
@@ -144,10 +117,10 @@ Uses Cloud Build to deploy with buildpacks (no manual Docker).
 
 ## Future Projects
 
-- AI-powered video generation pipeline
-- Asset tracking system (Obsero rebuild)
-- More microservices with shared Redis
-- SDK clients (Python, JavaScript, Go)
+- Production-ready microservices built on the reusables foundation
+- AI-powered data pipelines and analytics tools
+- SDK clients (Python, JavaScript, Go) for common cloud operations
+- Asset tracking and monitoring systems
 
 ## Connect
 
@@ -156,6 +129,6 @@ Uses Cloud Build to deploy with buildpacks (no manual Docker).
 
 ---
 
-**Built with:** Python • FastAPI • SvelteKit • Redis • GCP • Gemini AI
+**Built with:** Python • Redis • GCP • Gemini AI • PowerShell
 
-*Learning in public. Building useful tools. Sharing the journey.* 🚀
+*Learning in public. Building the foundation. Preparing for scale.* 🚀
