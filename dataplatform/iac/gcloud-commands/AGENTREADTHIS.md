@@ -4,6 +4,8 @@
 
 Reusable gcloud CLI commands organized by category. Store frequently used commands here for quick reference and reuse.
 
+**Note:** This is a command library, not an IaC component. No bootstrap script needed.
+
 ## File Naming
 
 Use descriptive names:

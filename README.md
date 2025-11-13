@@ -8,29 +8,28 @@ This repository houses my personal cloud infrastructure on Google Cloud Platform
 
 ## Projects
 
-Currently focused on building the reusable libraries foundation and infrastructure for future projects.
+### 🎛️ Cloud Control Center
+GCP management dashboard for executing commands, monitoring resources, and controlling cloud infrastructure from a single interface. Built with FastAPI + SvelteKit.
+
+**Status:** 🚧 In development
+
+### 📚 Reusables Library
+Shared Python libraries (Redis client, Gemini AI wrapper, common utilities) used across all projects.
 
 ## Infrastructure
 
 ### Current Resources
 
-- **Redis Server**: e2-micro Compute Engine instance (shared across projects)
-  - External IP: `34.66.188.104` (development)
-  - Internal IP: `10.128.0.3` (production via VPC)
-  - 768MB RAM with LRU eviction
-  - Free tier eligible
-
-- **VPC Connector**: `vpc-connector-us-central1`
-  - Enables Cloud Run → Compute Engine connectivity
-  - Private network access for services
+Clean slate - no active cloud resources. Infrastructure is created on-demand using automated scripts.
 
 ### Infrastructure as Code
 
 All infrastructure managed via PowerShell + `gcloud` CLI:
-- `iac/redis/` - Redis server setup/teardown
-- `iac/networking/` - VPC connector configuration
+- `iac/redis/` - Redis server setup/teardown scripts
+- `iac/networking/` - VPC connector configuration scripts
+- `iac/gcloud-commands/` - Reusable gcloud commands library
 
-**Philosophy:** Simple, reproducible, no Terraform complexity.
+**Philosophy:** Simple, reproducible, portable. No Terraform complexity.
 
 ## Tech Stack
 
@@ -59,17 +58,21 @@ All infrastructure managed via PowerShell + `gcloud` CLI:
 ```
 noah-sjursen-cloud/
 ├── dataplatform/
-│   ├── iac/                    # Infrastructure automation
-│   │   ├── redis/              # Redis server scripts
-│   │   └── networking/         # VPC connector setup
+│   ├── iac/                           # Infrastructure automation
+│   │   ├── cloud-control-center/      # OAuth & SA setup
+│   │   └── gcloud-commands/           # Reusable gcloud commands
 │   └── projects/
-│       └── reusables/          # Shared libraries
-│           ├── python/         # Python utilities
-│           │   ├── redis/      # Redis client
-│           │   ├── gemini/     # AI client
-│           │   └── common/     # Common utilities
-│           └── go/             # Go utilities (planned)
-└── README.md                   # This file
+│       ├── cloud-control-center/      # GCP management dashboard
+│       │   ├── api/                   # FastAPI backend
+│       │   └── dashboard/             # SvelteKit frontend
+│       └── reusables/                 # Shared libraries
+│           └── python/                # Python utilities
+│               ├── redis/             # Redis client
+│               ├── gemini/            # AI client
+│               ├── gcp/               # GCP IAM utilities
+│               └── common/            # Common utilities
+├── AGENTREADME.md                     # AI agent instructions
+└── README.md                          # This file
 ```
 
 ## Reusables Library
@@ -89,23 +92,33 @@ Cross-project utilities designed for reuse:
 - JSON output parsing
 - Code block stripping utilities
 
+**`reusables.python.gcp`**
+- IAM permission checking
+- Project access validation
+- User role retrieval
+
 **Design Goal:** Write once, use everywhere. Easy to extract for open-source.
 
 ## Quick Start
 
-### Setup Infrastructure
+### Run Cloud Control Center
 
+**First time:**
 ```powershell
-# Setup Redis server
-cd dataplatform/iac/redis
-.\setup-redis.ps1
-
-# Setup VPC connector for Cloud Run services
-cd ../networking
-.\setup-vpc-connector.ps1
+cd dataplatform/projects/cloud-control-center
+.\startNbuild.ps1
 ```
 
-Infrastructure is managed via PowerShell scripts - simple, reproducible, no Terraform complexity.
+**After that:**
+```powershell
+.\start.ps1
+```
+
+Opens at `http://localhost:8080`
+
+### Setup Infrastructure (when needed)
+
+Infrastructure scripts available in `iac/` - run on-demand to create Redis, VPC connectors, or other cloud resources.
 
 ## Development Philosophy
 
@@ -115,12 +128,12 @@ Infrastructure is managed via PowerShell scripts - simple, reproducible, no Terr
 - **Self-hosting first** - Own your data, deploy anywhere
 - **No enterprise bloat** - Keep it simple and fast
 
-## Future Projects
+## What's Next
 
-- Production-ready microservices built on the reusables foundation
-- AI-powered data pipelines and analytics tools
-- SDK clients (Python, JavaScript, Go) for common cloud operations
-- Asset tracking and monitoring systems
+- Complete Cloud Control Center (command execution, resource monitoring, Google auth)
+- Logging/monitoring service integrated with the control center
+- Production microservices leveraging the reusables foundation
+- Portable deployment system (one command to new GCP projects)
 
 ## Connect
 
@@ -129,6 +142,18 @@ Infrastructure is managed via PowerShell scripts - simple, reproducible, no Terr
 
 ---
 
-**Built with:** Python • Redis • GCP • Gemini AI • PowerShell
+## For AI Agents
 
-*Learning in public. Building the foundation. Preparing for scale.* 🚀
+This project uses structured agent instructions for better AI collaboration:
+
+- **Start here:** [`AGENTREADME.md`](AGENTREADME.md) - Navigation and project patterns
+- **Folder-specific:** Each module/service has an `AGENTREADTHIS.md` with detailed guidance
+- **Technology guides:** See `dataplatform/projects/AGENTREADTHIS-*.md` for SvelteKit, FastAPI, and Cloud Run patterns
+
+Read the appropriate documentation before making changes.
+
+---
+
+**Built with:** Python • FastAPI • SvelteKit • GCP • Gemini AI • PowerShell
+
+*Learning in public. Building infrastructure. One project at a time.* 🚀

@@ -267,6 +267,9 @@ Redis client with singleton pattern, CRUD operations, caching, counters, hash op
 ### `gemini/`
 Gemini AI client wrapper with text generation and streaming support.
 
+### `gcp/`
+GCP IAM utilities for project access validation and permission checking.
+
 ### `common/`
 General utilities that don't fit in specific modules.
 

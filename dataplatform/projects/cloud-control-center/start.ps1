@@ -1,25 +1,14 @@
-# Start Cloud Control Center locally
-# Installs dependencies, builds dashboard, runs server
+# Start Cloud Control Center
+# Quick start: assumes dashboard is already built
 
-Write-Host "🎛️  Cloud Control Center - Starting..." -ForegroundColor Cyan
+Write-Host "Cloud Control Center - Starting..." -ForegroundColor Cyan
 
-# Install Python dependencies
-Write-Host "`nInstalling Python dependencies..." -ForegroundColor Yellow
-pip install -r api/requirements.txt
+# Check if dashboard build exists
+if (-not (Test-Path "dashboard/build")) {
+    Write-Host "`nError: Dashboard not built. Run .\startNbuild.ps1 first." -ForegroundColor Red
+    exit 1
+}
 
-# Install dashboard dependencies
-Write-Host "`nInstalling dashboard dependencies..." -ForegroundColor Yellow
-cd dashboard
-npm install
-
-# Build dashboard
-Write-Host "`nBuilding dashboard..." -ForegroundColor Yellow
-npm run build
-
-# Return to root
-cd ..
-
-# Start server
 Write-Host "`n========================================" -ForegroundColor Green
 Write-Host "Starting server on http://localhost:8080" -ForegroundColor Green
 Write-Host "========================================`n" -ForegroundColor Green

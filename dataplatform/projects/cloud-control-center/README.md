@@ -12,6 +12,12 @@ GCP management dashboard with command execution and resource monitoring.
 
 ## Quick Start
 
+**First time:**
+```powershell
+.\startNbuild.ps1
+```
+
+**Subsequent runs:**
 ```powershell
 .\start.ps1
 ```

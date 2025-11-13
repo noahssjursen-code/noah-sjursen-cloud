@@ -35,13 +35,22 @@ cloud-control-center/
 
 ## Running Locally
 
+**First time / after changes:**
+```powershell
+.\startNbuild.ps1
+```
+Installs dependencies, builds dashboard, runs server.
+
+**Quick start (dashboard already built):**
 ```powershell
 .\start.ps1
 ```
+Just runs the server.
 
 ## Deployment
 
 ```powershell
 .\deploy.ps1
 ```
+(Not yet implemented)
 

@@ -1,0 +1,7 @@
+# Service account keys
+*-sa-key.json
+*.json
+
+# Environment files
+.env
+

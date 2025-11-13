@@ -7,13 +7,17 @@ project-name/
 ├── dashboard/                 # SvelteKit app
 │   ├── src/
 │   │   ├── app.html          # HTML shell
+│   │   ├── app.css           # Tailwind imports
 │   │   ├── routes/           # Pages
+│   │   │   ├── +layout.svelte # Root layout (imports app.css)
 │   │   │   └── +page.svelte  # Root page
 │   │   ├── components/       # Reusable components (if needed)
 │   │   └── lib/              # Utilities
 │   ├── package.json
 │   ├── svelte.config.js      # Adapter configuration
 │   ├── vite.config.js
+│   ├── tailwind.config.js    # Tailwind configuration
+│   ├── postcss.config.js     # PostCSS configuration
 │   └── tsconfig.json         # TypeScript config
 └── api/                       # FastAPI backend (mounts this)
 ```
@@ -52,7 +56,7 @@ export default {
 
 ## Dependencies
 
-Minimal required:
+Required:
 
 ```json
 {
@@ -62,7 +66,10 @@ Minimal required:
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
     "svelte": "^4.2.0",
     "vite": "^5.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.4.0"
   }
 }
 ```
@@ -102,19 +109,68 @@ app.mount("/", StaticFiles(directory="dashboard/build", html=True), name="dashbo
 - Server endpoints: `+server.ts` (avoid - use FastAPI instead)
 - Components: `ComponentName.svelte` (PascalCase)
 
-## Styling
+## Styling with TailwindCSS
 
-Inline styles in components:
+### Setup Required Files
+
+**`tailwind.config.js`:**
+```javascript
+export default {
+	content: ['./src/**/*.{html,js,svelte,ts}'],
+	theme: {
+		extend: {}
+	},
+	plugins: []
+};
+```
+
+**`postcss.config.js`:**
+```javascript
+export default {
+	plugins: {
+		tailwindcss: {},
+		autoprefixer: {}
+	}
+};
+```
+
+**`src/app.css`:**
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+**Import in `src/routes/+layout.svelte`:**
+```svelte
+<script>
+	import '../app.css';
+</script>
+
+<slot />
+```
+
+### Usage
+
+Use Tailwind classes directly:
+
+```svelte
+<div class="flex items-center justify-center p-4">
+	<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+		Click me
+	</button>
+</div>
+```
+
+Component-specific styles (if needed):
 
 ```svelte
 <style>
-	.class {
-		property: value;
+	.custom {
+		/* Only for truly custom styles not in Tailwind */
 	}
 </style>
 ```
-
-Or TailwindCSS if needed (add separately).
 
 ## TypeScript
 
@@ -146,9 +202,9 @@ Type your props:
 </script>
 
 {#if loading}
-	<p>Loading...</p>
+	<p class="text-gray-500">Loading...</p>
 {:else if data}
-	<p>{data.value}</p>
+	<p class="text-lg font-semibold">{data.value}</p>
 {/if}
 ```
 
@@ -167,9 +223,11 @@ Type your props:
 	}
 </script>
 
-<form on:submit|preventDefault={submit}>
-	<input bind:value />
-	<button>Submit</button>
+<form on:submit|preventDefault={submit} class="space-y-4">
+	<input bind:value class="border border-gray-300 rounded px-3 py-2 w-full" />
+	<button class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+		Submit
+	</button>
 </form>
 ```
 
@@ -179,4 +237,5 @@ Type your props:
 - Do not use SSR features - static adapter only
 - Do not put business logic in Svelte - keep in FastAPI
 - Do not commit `node_modules/` or `build/`
+- Do not skip TailwindCSS - always use it for styling
 
