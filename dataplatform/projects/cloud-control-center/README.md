@@ -1,6 +1,6 @@
 # Cloud Control Center
 
-Enterprise-grade GCP management dashboard with role-based access control, OAuth 2.0 authentication, and resource monitoring.
+GCP management dashboard with role-based access control, OAuth 2.0 authentication, and resource monitoring.
 
 ## Features
 
